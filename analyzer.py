@@ -33,3 +33,10 @@ def fetch_pokemon(pokemon_name):
 
 if __name__ == "__main__":
     console.print("[bold magenta]--- cli pokedex v0.1 ---[/bold magenta]\n")
+
+    # test valid names
+    fetch_pokemon("gengar")
+    fetch_pokemon("lucario")
+    
+    # test invalid name
+    fetch_pokemon("pikachuuuu")

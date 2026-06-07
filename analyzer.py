@@ -84,45 +84,68 @@ def display_team(team):
         
     console.print(table)
 
-def analyze_weaknesses(team):
+def analyze_matchups(team):
     if not team:
         return
         
-    console.print("\n[bold cyan]--- team weakness analysis ---[/bold cyan]")
+    console.print("\n[bold cyan]--- team matchup analysis ---[/bold cyan]")
     
-    weaknesses_count = {}
+    weak_count = {}
+    resist_count = {}
     
     with console.status("analyzing type matchups...", spinner="dots"):
         for p in team:
-            pkmn_weaknesses = set()
+            p_weak = set()
+            p_resist = set()
+            
             for t in p["types"]:
                 type_data = get_type_data(t)
                 if type_data:
-                    # simplified: just looking at raw double damage from
-                    for weak_to in type_data["double_damage_from"]:
-                        pkmn_weaknesses.add(weak_to["name"])
-            
-            for w in pkmn_weaknesses:
-                weaknesses_count[w] = weaknesses_count.get(w, 0) + 1
-                
-    # filter to show only shared weaknesses (2 or more pokemon weak to it)
-    shared_weaknesses = {k: v for k, v in weaknesses_count.items() if v > 1}
-    
-    if shared_weaknesses:
-        table = Table(title="critical team vulnerabilities", show_header=True)
-        table.add_column("attack type", style="red bold")
-        table.add_column("members weak to it", justify="center")
+                    # check weaknesses
+                    for w in type_data["double_damage_from"]:
+                        p_weak.add(w["name"])
+                    
+                    # check resistances and immunities
+                    for r in type_data["half_damage_from"]:
+                        p_resist.add(r["name"])
+                    for i in type_data["no_damage_from"]:
+                        p_resist.add(i["name"])
+                        
+            # basic cancellation logic (if weak and resistant -> neutral)
+            for w in p_weak:
+                if w not in p_resist:
+                    weak_count[w] = weak_count.get(w, 0) + 1
+                    
+            for r in p_resist:
+                if r not in p_weak:
+                    resist_count[r] = resist_count.get(r, 0) + 1
+
+    # display vulnerabilities table
+    shared_weak = {k: v for k, v in weak_count.items() if v > 1}
+    if shared_weak:
+        t_weak = Table(title="critical vulnerabilities", show_header=True)
+        t_weak.add_column("attack type", style="red bold")
+        t_weak.add_column("members weak to it", justify="center")
         
-        sorted_w = sorted(shared_weaknesses.items(), key=lambda x: x[1], reverse=True)
-        for w_type, count in sorted_w:
-            table.add_row(w_type, str(count))
-            
-        console.print(table)
-        console.print("[dim]note: showing types that are super effective against multiple members.[/dim]\n")
+        for w, c in sorted(shared_weak.items(), key=lambda x: x[1], reverse=True):
+            t_weak.add_row(w, str(c))
+        console.print(t_weak)
     else:
-        console.print("[bold green]✓ good job! no shared weaknesses found across the team.[/bold green]\n")
+        console.print("[bold green]✓ no major shared vulnerabilities.[/bold green]")
+
+    # display resistances table
+    shared_resist = {k: v for k, v in resist_count.items() if v > 1}
+    if shared_resist:
+        t_resist = Table(title="solid team resistances", show_header=True)
+        t_resist.add_column("attack type", style="green bold")
+        t_resist.add_column("members resisting it", justify="center")
+        
+        for r, c in sorted(shared_resist.items(), key=lambda x: x[1], reverse=True):
+            t_resist.add_row(r, str(c))
+        console.print(t_resist)
+        console.print("[dim]note: showing types that multiple members resist.[/dim]\n")
 
 if __name__ == "__main__":
     my_team = build_team()
     display_team(my_team)
-    analyze_weaknesses(my_team)
+    analyze_matchups(my_team)

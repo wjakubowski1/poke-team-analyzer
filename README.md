@@ -19,3 +19,8 @@ The script dynamically fetches live data to:
    `pip install requests rich`
 4. Run the script: 
    `python3 analyzer.py`
+
+
+![Screenshot](images/1.png)
+![Screenshot](images/2.png)
+![Screenshot](images/3.png)
